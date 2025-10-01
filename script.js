@@ -1,90 +1,145 @@
-// JavaScriptdagi hisoblash: C#dagi logikaga moslash
-function calculate(principal, years, ratePercent, rateIsMonthly, compoundMonthly) {
+function fmt(n) {
+    // ikki xonali koma bilan va mahalliy format
+    return Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function calculateInvestment({ principal, years, ratePercent, rateIsMonthly, compoundMonthly, monthlyContribution = 0, startDate = null }) {
     principal = Number(principal);
     years = parseInt(years, 10);
     ratePercent = Number(ratePercent);
-    if (isNaN(principal) || isNaN(years) || isNaN(ratePercent)) return null;
-    if (principal < 0 || years < 0 || ratePercent < 0) return null;
+    monthlyContribution = Number(monthlyContribution) || 0;
+
+    if (isNaN(principal) || isNaN(years) || isNaN(ratePercent) || principal < 0 || years < 0 || ratePercent < 0 || monthlyContribution < 0) {
+    throw new Error("Noto'g'ri kirish qiymatlari.");
+    }
 
     const periods = [];
+    const start = startDate ? new Date(startDate) : new Date();
     if (compoundMonthly) {
     const totalMonths = years * 12;
-    let monthlyRate;
-    if (rateIsMonthly) {
-        monthlyRate = ratePercent / 100.0;
-    } else {
-        monthlyRate = (ratePercent / 100.0) / 12.0;
-    }
+    const monthlyRate = rateIsMonthly ? (ratePercent / 100) : ((ratePercent / 100) / 12);
     let balance = principal;
     for (let m = 1; m <= totalMonths; m++) {
-        const old = balance;
+        const prev = balance;
+        // foizni qo'shamiz
+        // so'ngra oy oxirida qo'shamiz (agar foydalanuvchi kiritgan bo'lsa)
+        if (m > 1 && monthlyContribution > 0) {
+        balance = +(balance + monthlyContribution).toFixed(8);
+        }
         balance = +(balance * (1 + monthlyRate)).toFixed(8);
-        periods.push({ idx: m, dateOffsetMonths: m, balance: balance, interest: +(balance - old).toFixed(8) });
+        
+        const interest = +(balance - prev - ((m > 1 && monthlyContribution > 0) ? monthlyContribution : 0)).toFixed(8);
+        periods.push({
+        index: m,
+        date: new Date(start.getFullYear(), start.getMonth() + m, start.getDate()),
+        balance: +balance.toFixed(2),
+        interest: +interest.toFixed(2)
+        });
     }
-    const final = periods.length ? Number(periods[periods.length - 1].balance) : principal;
-    const totalInterest = +(final - principal).toFixed(8);
-    return { periods, final, totalInterest, periodUnit: 'oy' };
     } else {
     const totalYears = years;
-    let annualRate;
-    if (rateIsMonthly) {
-        annualRate = (ratePercent / 100.0) * 12.0;
-    } else {
-        annualRate = ratePercent / 100.0;
-    }
+    const annualRate = rateIsMonthly ? ((ratePercent / 100) * 12) : (ratePercent / 100);
     let balance = principal;
     for (let y = 1; y <= totalYears; y++) {
-        const old = balance;
+        const prev = balance;
         balance = +(balance * (1 + annualRate)).toFixed(8);
-        periods.push({ idx: y, dateOffsetYears: y, balance: balance, interest: +(balance - old).toFixed(8) });
+        if (monthlyContribution > 0) {
+        balance = +(balance + monthlyContribution * 12).toFixed(8);
+        }
+        const interest = +(balance - prev - (monthlyContribution > 0 ? monthlyContribution * 12 : 0)).toFixed(8);
+        periods.push({
+        index: y,
+        date: new Date(start.getFullYear() + y, start.getMonth(), start.getDate()),
+        balance: +balance.toFixed(2),
+        interest: +interest.toFixed(2)
+        });
     }
-    const final = periods.length ? Number(periods[periods.length - 1].balance) : principal;
-    const totalInterest = +(final - principal).toFixed(8);
-    return { periods, final, totalInterest, periodUnit: 'yil' };
     }
+
+    const final = periods.length ? periods[periods.length - 1].balance : principal;
+    const totalContrib = monthlyContribution * (compoundMonthly ? (years * 12) : (years * 12));
+    const totalInterest = +(final - principal - totalContrib).toFixed(2);
+
+    return { periods, final: +final.toFixed(2), totalInterest, periodUnit: compoundMonthly ? 'oy' : 'yil' };
 }
 
-function formatNumber(x) {
-    // 2 onlikgacha chiqarsin
-    return Number(x).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function buildTableHtml(result) {
+    if (!result.periods.length) return '<div style="padding:12px">Hech qanday davr yo‘q (yillar=0)</div>';
+
+    const header = `<table>
+    <thead><tr><th>#</th><th>Sanasi</th><th>Davr</th><th>Balans</th><th>Ushbu davrdagi foiz</th></tr></thead><tbody>`;
+
+    const rows = result.periods.map(p => {
+    // period label
+    const label = result.periodUnit === 'oy' ? `${p.index} - oy` : `${p.index} - yil`;
+    const dateStr = p.date ? new Date(p.date).toLocaleDateString() : '-';
+    return `<tr>
+        <td>${p.index}</td>
+        <td>${dateStr}</td>
+        <td style="text-align:center">${label}</td>
+        <td>${fmt(p.balance)}</td>
+        <td>${fmt(p.interest)}</td>
+    </tr>`;
+    }).join("");
+
+    return header + rows + '</tbody></table>';
 }
 
-document.getElementById('calc').addEventListener('click', () => {
+document.getElementById('calcBtn').addEventListener('click', () => {
+    try {
     const principal = document.getElementById('principal').value;
     const years = document.getElementById('years').value;
     const rate = document.getElementById('rate').value;
     const rateType = document.getElementById('rateType').value;
-    const compoundMonthly = document.getElementById('compoundMonthly').checked;
+    const compoundType = document.getElementById('compoundType').value;
+    const monthlyContribution = document.getElementById('monthlyContribution').value || 0;
+    const startToday = document.getElementById('startToday').checked;
 
-    const rateIsMonthly = (rateType === 'month');
+    const rateIsMonthly = rateType === 'monthly';
+    const compoundMonthly = compoundType === 'monthly';
 
-    const res = calculate(principal, years, rate, rateIsMonthly, compoundMonthly);
-    if (!res) {
-    alert('Iltimos, barcha maydonlarni to\'g\'ri to\'ldiring va manfiy qiymat bermang.');
-    return;
-    }
+    const res = calculateInvestment({
+        principal,
+        years,
+        ratePercent: rate,
+        rateIsMonthly,
+        compoundMonthly,
+        monthlyContribution,
+        startDate: startToday ? new Date() : null
+    });
 
     document.getElementById('result').style.display = 'block';
-    document.getElementById('finalBalance').textContent = formatNumber(res.final);
-    document.getElementById('totalInterest').textContent = formatNumber(res.totalInterest);
-    document.getElementById('periodType').textContent = res.periodUnit === 'oy' ? 'Oyma-oy' : 'Yillik';
+    document.getElementById('finalBalance').textContent = fmt(res.final) + " so'm";
+    document.getElementById('totalInterest').textContent = fmt(res.totalInterest) + " so'm";
+    document.getElementById('periodType').textContent = (res.periodUnit === 'oy') ? 'Oyma-oy' : 'Yillik';
 
-    // Jadval yaratish
-    const wrap = document.getElementById('tableWrap');
-    let html = '<table><thead><tr><th>#</th><th>Davr</th><th>Balans</th><th>Ushbu davrdagi foiz</th></tr></thead><tbody>';
-    if (res.periods.length === 0) {
-    html += `<tr><td colspan="4" style="text-align:center">Hech qanday davr yo'q (yillar=0)</td></tr>`;
-    } else {
-    res.periods.forEach(p => {
-        const periodLabel = (res.periodUnit === 'oy') ? `${p.idx} - oy` : `${p.idx} - yil`;
-        html += `<tr>
-                <td>${p.idx}</td>
-                <td>${periodLabel}</td>
-                <td>${formatNumber(p.balance)}</td>
-                <td>${formatNumber(p.interest)}</td>
-                </tr>`;
-    });
+    document.getElementById('tableWrap').innerHTML = buildTableHtml(res);
+
+    // Save last result for CSV export
+    window._lastCalcResult = res;
+    } catch (err) {
+    alert(err.message || "Hisoblashda xatolik.");
     }
-    html += '</tbody></table>';
-    wrap.innerHTML = html;
+});
+
+// CSV export (soddalashtirilgan)
+document.getElementById('exportCsv').addEventListener('click', () => {
+    const res = window._lastCalcResult;
+    if (!res) { alert("Avval hisoblang."); return; }
+    const rows = [
+    ['Index', 'Sana', 'Davr', 'Balans', 'Ushbu davrdagi foiz']
+    ];
+    res.periods.forEach(p => {
+    const dateStr = p.date ? new Date(p.date).toLocaleDateString() : '';
+    const label = res.periodUnit === 'oy' ? `${p.index} - oy` : `${p.index} - yil`;
+    rows.push([p.index, dateStr, label, p.balance.toFixed(2), p.interest.toFixed(2)]);
+    });
+    const csvContent = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `investment_periods_${Date.now()}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
 });
