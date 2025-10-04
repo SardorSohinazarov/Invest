@@ -18,3 +18,25 @@ th { background:#fbfcfe; text-align:center; font-weight:700; }
 td:first-child, th:first-child { text-align:center; }
 .table-wrap { max-height: 420px; overflow:auto; border-radius:8px; border:1px solid #eef2f7; padding:6px; background:#fff; }
 @media (max-width:800px) { form { grid-template-columns: 1fr; } .stat { min-width: 120px; } }
+
+form {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+  align-items: end;
+}
+
+input[type="number"],
+input[type="text"],
+select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #e6eef6;
+  font-size: 14px;
+  height: 40px; /* ✅ hamma elementlar bir xil balandlikda */
+  box-sizing: border-box;
+  appearance: none; /* select uchun brauzer farqlarini kamaytiradi */
+  background-color: #fff;
+}
