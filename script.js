@@ -3,7 +3,7 @@ function fmt(n) {
     return Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-function calculateInvestment({ principal, years, ratePercent, rateIsMonthly, compoundMonthly, monthlyContribution = 0, startDate = null }) {
+function calculateInvestment({ principal, years, ratePercent, rateIsMonthly, compoundMonthly, monthlyContribution = 0}) {
     principal = Number(principal);
     years = parseInt(years, 10);
     ratePercent = Number(ratePercent);
@@ -14,7 +14,7 @@ function calculateInvestment({ principal, years, ratePercent, rateIsMonthly, com
     }
 
     const periods = [];
-    const start = startDate ? new Date(startDate) : new Date();
+    const start = new Date();
     if (compoundMonthly) {
     const totalMonths = years * 12;
     const monthlyRate = rateIsMonthly ? (ratePercent / 100) : ((ratePercent / 100) / 12);
@@ -32,6 +32,7 @@ function calculateInvestment({ principal, years, ratePercent, rateIsMonthly, com
         periods.push({
         index: m,
         date: new Date(start.getFullYear(), start.getMonth() + m, start.getDate()),
+        previous: +prev.toFixed(2),
         balance: +balance.toFixed(2),
         interest: +interest.toFixed(2)
         });
@@ -48,10 +49,11 @@ function calculateInvestment({ principal, years, ratePercent, rateIsMonthly, com
         }
         const interest = +(balance - prev - (monthlyContribution > 0 ? monthlyContribution * 12 : 0)).toFixed(8);
         periods.push({
-        index: y,
-        date: new Date(start.getFullYear() + y, start.getMonth(), start.getDate()),
-        balance: +balance.toFixed(2),
-        interest: +interest.toFixed(2)
+            index: y,
+            date: new Date(start.getFullYear() + y, start.getMonth(), start.getDate()),
+            previous: +prev.toFixed(2),
+            balance: +balance.toFixed(2),
+            interest: +interest.toFixed(2)
         });
     }
     }
@@ -67,18 +69,27 @@ function buildTableHtml(result) {
     if (!result.periods.length) return '<div style="padding:12px">Hech qanday davr yo‘q (yillar=0)</div>';
 
     const header = `<table>
-    <thead><tr><th>#</th><th>Sanasi</th><th>Davr</th><th>Balans</th><th>Ushbu davrdagi foiz</th></tr></thead><tbody>`;
+        <thead>
+            <tr>
+                <th>Davr</th>
+                <th>Sanasi</th>
+                <th>Oy boshida</th>
+                <th>Foyda</th>
+                <th>Balans</th>
+            </tr>
+        </thead>
+        <tbody>`;
 
     const rows = result.periods.map(p => {
     // period label
     const label = result.periodUnit === 'oy' ? `${p.index} - oy` : `${p.index} - yil`;
     const dateStr = p.date ? new Date(p.date).toLocaleDateString() : '-';
     return `<tr>
-        <td>${p.index}</td>
-        <td>${dateStr}</td>
         <td style="text-align:center">${label}</td>
-        <td>${fmt(p.balance)}</td>
-        <td>${fmt(p.interest)}</td>
+        <td style="text-align:center">${dateStr}</td>
+        <td style="text-align:center">${fmt(p.previous)}</td>
+        <td style="text-align:center">${fmt(p.interest)}</td>
+        <td style="text-align:center">${fmt(p.balance)}</td>
     </tr>`;
     }).join("");
 
@@ -93,7 +104,6 @@ document.getElementById('calcBtn').addEventListener('click', () => {
     const rateType = document.getElementById('rateType').value;
     const compoundType = document.getElementById('compoundType').value;
     const monthlyContribution = document.getElementById('monthlyContribution').value || 0;
-    const startToday = document.getElementById('startToday').checked;
 
     const rateIsMonthly = rateType === 'monthly';
     const compoundMonthly = compoundType === 'monthly';
@@ -104,14 +114,13 @@ document.getElementById('calcBtn').addEventListener('click', () => {
         ratePercent: rate,
         rateIsMonthly,
         compoundMonthly,
-        monthlyContribution,
-        startDate: startToday ? new Date() : null
+        monthlyContribution
     });
 
     document.getElementById('result').style.display = 'block';
     document.getElementById('finalBalance').textContent = fmt(res.final) + " so'm";
     document.getElementById('totalInterest').textContent = fmt(res.totalInterest) + " so'm";
-    document.getElementById('periodType').textContent = (res.periodUnit === 'oy') ? 'Oyma-oy' : 'Yillik';
+    document.getElementById('periodType').textContent = `${years} yil davomida ` + ((res.periodUnit === 'oy') ? `oyma-oy ${fmt(monthlyContribution)}` : `yilda bir ${fmt(monthlyContribution)}`) + ' dan';
 
     document.getElementById('tableWrap').innerHTML = buildTableHtml(res);
 

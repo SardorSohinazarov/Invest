@@ -11,29 +11,21 @@
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>Investitsiya hisoblagich — barcha davrlar</h1>
-      <p style="margin:0;color:#475569;font-size:13px">
-        Boshlang'ich summa, muddat, foiz va kerak bo'lsa har oy qo'shiladigan summani kiriting. "Oyma-oy" tanlansa oyma-oy hisoblanadi.
-      </p>
+      <h1>Investitsiya hisoblagich</h1>
 
       <form id="form">
         <div>
-          <label for="principal">Boshlang'ich summa</label>
+          <label for="principal">Boshlang'ich investitsiya</label>
           <input id="principal" type="number" min="0" step="0.01" value="1000000">
         </div>
 
         <div>
-          <label for="years">Yillar (butun son)</label>
+          <label for="years">Investitsiya muddati (Necha yil?)</label>
           <input id="years" type="number" min="0" step="1" value="1">
         </div>
 
         <div>
-          <label for="rate">Foiz (% — raqam)</label>
-          <input id="rate" type="number" min="0" step="0.01" value="20">
-        </div>
-
-        <div>
-          <label for="rateType">Foiz turi</label>
+          <label for="rateType">Foyda turi</label>
           <select id="rateType">
             <option value="yearly">Yillik</option>
             <option value="monthly">Oylik</option>
@@ -41,7 +33,12 @@
         </div>
 
         <div>
-          <label for="compoundType">Qo'shilish davri</label>
+          <label for="rate">Taxminiy foyda (%)</label>
+          <input id="rate" type="number" min="0" step="0.01" value="20">
+        </div>
+
+        <div>
+          <label for="compoundType">Qo'shimcha investitsiya oralig'i</label>
           <select id="compoundType">
             <option value="monthly">Oyma-oy</option>
             <option value="yearly">Yiliga bir marta</option>
@@ -49,15 +46,11 @@
         </div>
 
         <div>
-          <label for="monthlyContribution">Har oy qo'shiladigan summa (ixtiyoriy)</label>
+          <label for="monthlyContribution">Qo'shimcha investitsiya</label>
           <input id="monthlyContribution" type="number" min="0" step="0.01" placeholder="0">
         </div>
 
         <div class="full">
-          <div class="checkbox">
-            <input id="startToday" type="checkbox" checked>
-            <label for="startToday">Bugun boshlash (sanani jadvalga yozadi)</label>
-          </div>
           <div style="margin-left:auto;">
             <button id="calcBtn" type="button">Hisoblash</button>
             <button id="exportCsv" type="button" style="margin-left:8px; background:#0ea5a4;">CSV yuklab olish</button>
@@ -68,8 +61,8 @@
       <div class="result" id="result" style="display:none;">
         <div class="summary">
           <div class="stat"><div style="color:#64748b;font-size:12px">Yakuniy summa</div><div id="finalBalance" style="font-weight:700;margin-top:6px">0</div></div>
-          <div class="stat"><div style="color:#64748b;font-size:12px">Jami foiz</div><div id="totalInterest" style="font-weight:700;margin-top:6px">0</div></div>
-          <div class="stat"><div style="color:#64748b;font-size:12px">Period turi</div><div id="periodType" style="font-weight:700;margin-top:6px">-</div></div>
+          <div class="stat"><div style="color:#64748b;font-size:12px">Jami foyda</div><div id="totalInterest" style="font-weight:700;margin-top:6px">0</div></div>
+          <div class="stat"><div style="color:#64748b;font-size:12px">Qo'shimcha investitsiya</div><div id="periodType" style="font-weight:700;margin-top:6px">-</div></div>
         </div>
 
         <div class="table-wrap" id="tableWrap"></div>
