@@ -141,23 +141,44 @@ document.getElementById('calcBtn').addEventListener('click', () => {
 });
 
 // CSV export (soddalashtirilgan)
+// CSV export (jadvaldagi formatda)
 document.getElementById('exportCsv').addEventListener('click', () => {
     const res = window._lastCalcResult;
-    if (!res) { alert("Avval hisoblang."); return; }
+    if (!res) { 
+        alert("Avval hisoblang."); 
+        return; 
+    }
+
+    // CSV sarlavhalari — jadvaldagi kabi
     const rows = [
-    ['Index', 'Sana', 'Davr', 'Balans', 'Ushbu davrdagi foiz']
+        ['Davr', 'Sanasi', 'Oy boshida', 'Oylik investitsiya', 'Foyda', 'Oy oxirida']
     ];
+
+    // Har bir period uchun ma’lumot
     res.periods.forEach(p => {
-    const dateStr = p.date ? new Date(p.date).toLocaleDateString() : '';
-    const label = res.periodUnit === 'oy' ? `${p.index} - oy` : `${p.index} - yil`;
-    rows.push([p.index, dateStr, label, p.balance.toFixed(2), p.interest.toFixed(2)]);
+        const label = res.periodUnit === 'oy' ? `${p.index} - oy` : `${p.index} - yil`;
+        const dateStr = p.date ? new Date(p.date).toLocaleDateString() : '-';
+        rows.push([
+            label,
+            dateStr,
+            fmt(p.previous),
+            fmt(p.monthlyContribution),
+            fmt(p.interest),
+            fmt(p.balance)
+        ]);
     });
-    const csvContent = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g,'""')}"`).join(',')).join('\n');
+
+    // CSV formatlash
+    const csvContent = rows
+        .map(r => r.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+
+    // Fayl sifatida saqlash
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `investment_periods_${Date.now()}.csv`;
+    a.download = `investment_table_${Date.now()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
 });
