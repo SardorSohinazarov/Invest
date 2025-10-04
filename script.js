@@ -16,46 +16,53 @@ function calculateInvestment({ principal, years, ratePercent, rateIsMonthly, com
     const periods = [];
     const start = new Date();
     if (compoundMonthly) {
-    const totalMonths = years * 12;
-    const monthlyRate = rateIsMonthly ? (ratePercent / 100) : ((ratePercent / 100) / 12);
-    let balance = principal;
-    for (let m = 1; m <= totalMonths; m++) {
-        const prev = balance;
-        // foizni qo'shamiz
-        // so'ngra oy oxirida qo'shamiz (agar foydalanuvchi kiritgan bo'lsa)
-        if (m > 1 && monthlyContribution > 0) {
-        balance = +(balance + monthlyContribution).toFixed(8);
-        }
-        balance = +(balance * (1 + monthlyRate)).toFixed(8);
-        
-        const interest = +(balance - prev - ((m > 1 && monthlyContribution > 0) ? monthlyContribution : 0)).toFixed(8);
-        periods.push({
-        index: m,
-        date: new Date(start.getFullYear(), start.getMonth() + m, start.getDate()),
-        previous: +prev.toFixed(2),
-        balance: +balance.toFixed(2),
-        interest: +interest.toFixed(2)
-        });
-    }
-    } else {
-    const totalYears = years;
-    const annualRate = rateIsMonthly ? ((ratePercent / 100) * 12) : (ratePercent / 100);
-    let balance = principal;
-    for (let y = 1; y <= totalYears; y++) {
-        const prev = balance;
-        balance = +(balance * (1 + annualRate)).toFixed(8);
-        if (monthlyContribution > 0) {
-        balance = +(balance + monthlyContribution * 12).toFixed(8);
-        }
-        const interest = +(balance - prev - (monthlyContribution > 0 ? monthlyContribution * 12 : 0)).toFixed(8);
-        periods.push({
-            index: y,
-            date: new Date(start.getFullYear() + y, start.getMonth(), start.getDate()),
+        const totalMonths = years * 12;
+        const monthlyRate = rateIsMonthly ? (ratePercent / 100) : ((ratePercent / 100) / 12);
+        let balance = principal;
+        for (let m = 1; m <= totalMonths; m++) {
+            const prev = balance;
+            // foizni qo'shamiz
+            // so'ngra oy oxirida qo'shamiz (agar foydalanuvchi kiritgan bo'lsa)
+            if (m > 1 && monthlyContribution > 0) {
+                balance = +(balance + monthlyContribution).toFixed(8);
+            }
+            balance = +(balance * (1 + monthlyRate)).toFixed(8);
+            
+            const interest = +(balance - prev - ((m > 1 && monthlyContribution > 0) ? monthlyContribution : 0)).toFixed(8);
+            periods.push({
+            index: m,
+            date: new Date(start.getFullYear(), start.getMonth() + m, start.getDate()),
             previous: +prev.toFixed(2),
+            monthlyContribution: (m > 1 && monthlyContribution > 0) ? monthlyContribution : 0,
             balance: +balance.toFixed(2),
             interest: +interest.toFixed(2)
-        });
-    }
+            });
+        }
+    } 
+    else
+    {
+        const totalYears = years;
+        const annualRate = rateIsMonthly ? ((ratePercent / 100) * 12) : (ratePercent / 100);
+        let balance = principal;
+        for (let y = 1; y <= totalYears; y++) {
+            const prev = balance;
+            balance = +(balance * (1 + annualRate)).toFixed(8);
+
+            if (monthlyContribution > 0) {
+                balance = +(balance + monthlyContribution * 12).toFixed(8);
+            }
+
+            const interest = +(balance - prev - (monthlyContribution > 0 ? monthlyContribution * 12 : 0)).toFixed(8);
+
+            periods.push({
+                index: y,
+                date: new Date(start.getFullYear() + y, start.getMonth(), start.getDate()),
+                previous: +prev.toFixed(2),
+                monthlyContribution: 0,
+                balance: +balance.toFixed(2),
+                interest: +interest.toFixed(2)
+            });
+        }
     }
 
     const final = periods.length ? periods[periods.length - 1].balance : principal;
@@ -74,8 +81,9 @@ function buildTableHtml(result) {
                 <th>Davr</th>
                 <th>Sanasi</th>
                 <th>Oy boshida</th>
+                <th>Oylik investitsiya</th>
                 <th>Foyda</th>
-                <th>Balans</th>
+                <th>Oy oxirida</th>
             </tr>
         </thead>
         <tbody>`;
@@ -88,6 +96,7 @@ function buildTableHtml(result) {
         <td style="text-align:center">${label}</td>
         <td style="text-align:center">${dateStr}</td>
         <td style="text-align:center">${fmt(p.previous)}</td>
+        <td style="text-align:center">${fmt(p.monthlyContribution)}</td>
         <td style="text-align:center">${fmt(p.interest)}</td>
         <td style="text-align:center">${fmt(p.balance)}</td>
     </tr>`;
